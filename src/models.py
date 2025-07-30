@@ -39,7 +39,7 @@ class Character(db.Model):
     hair_color: Mapped[str] = mapped_column(nullable=False)
     eye_color: Mapped[str] = mapped_column(nullable=False)
     height: Mapped[str] = mapped_column(nullable=False)
-    homeworld: Mapped[int] = mapped_column(ForeignKey("planet.id"))
+    homeworld: Mapped[int] = mapped_column(ForeignKey("planet.id"), nullable=False)
     favorite: Mapped["Favorite"] = relationship(back_populates="character")
 
     def serialize(self):
