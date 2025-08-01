@@ -39,9 +39,10 @@ class Character(db.Model):
     hair_color: Mapped[str] = mapped_column(nullable=False)
     eye_color: Mapped[str] = mapped_column(nullable=False)
     height: Mapped[str] = mapped_column(nullable=False)
-    homeworld: Mapped[int] = mapped_column(ForeignKey("planet.id"), nullable=False)
+    homeworld_id: Mapped[int] = mapped_column(ForeignKey("planet.id"), nullable=True)
     favorite: Mapped["Favorite"] = relationship(back_populates="character")
 
+    homeworld: Mapped["Planet"] =relationship("Planet", back_populates="character")
     def serialize(self):
         return {
             "id": self.id,
@@ -60,6 +61,7 @@ class Planet(db.Model):
     name: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
     climate: Mapped[str] = mapped_column(nullable=False)
     population: Mapped[str] = mapped_column(nullable=False)
+    character: Mapped[List["Character"]]= relationship("Character", back_populates="homeworld")
     favorite: Mapped["Favorite"] = relationship(back_populates="planet")
 
     def serialize(self):
