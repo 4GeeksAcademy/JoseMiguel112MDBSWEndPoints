@@ -9,6 +9,8 @@ from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from admin import setup_admin
 from models import db, User, Character, Planet, Vehicle
+from sqlalchemy import select
+
 #from models import Person
 
 app = Flask(__name__)
@@ -50,11 +52,68 @@ def handle_hello():
 @app.route('/characters', methods=['GET'])
 def get_characters():
 
-    characters= Character.query.all()
+    all_characters = db.session.execute(select(Character)).scalars().all()
+   
+    results = list(map(lambda character: character.serialize(), all_characters))
+
+    # characters= Character.query.all()
+    response_body = {
+        "results": results
+    }
+
+    return jsonify(response_body), 200
+
+    # return jsonify([character.serialize()for character in all_characters]), 200
+
+@app.route('/characters/<int:id>', methods=['GET'])
+def get_one_characters(id):
+    print(id)
+    character = db.session.execute(select(Character).where(Character.id == id)).scalar_one_or_none()
+    
+    
+    if character is None:
+        return jsonify({"msg": "Character not found"}), 404
+
+    response_body = {
+        "msg": "ok",
+        "result": character.serialize()
+    }
+
+    return jsonify(response_body), 200
+
+@app.route('/planets', methods=['GET'])
+def get_planets():
+    try:
+
+        all_planets = db.session.execute(select(Planet)).scalars().all()
+   
+        results = list(map(lambda planets: planets.serialize(), all_planets))
+
+    # characters= Character.query.all()
+        response_body = {
+            "results": results
+        }
+
+        return jsonify(response_body), 200
+    except Exception as e:
+        return jsonify({"msg": "Error retrieving planets", "error": str(e)}), 500
     
 
-    return jsonify([character.serialize()for character in characters]), 200
+@app.route('/planets/<int:id>', methods=['GET'])
+def get_one_planet(id):
+    print(id)
+    planet = db.session.execute(select(Planet).where(Planet.id == id)).scalar_one_or_none()
+    
+    
+    if planet is None:
+        return jsonify({"msg": "Planet not found"}), 404
 
+    response_body = {
+        "msg": "ok",
+        "result": planet.serialize()
+    }
+
+    return jsonify(response_body), 200
 # this only runs if `$ python src/app.py` is executed
 if __name__ == '__main__':
     PORT = int(os.environ.get('PORT', 3000))
