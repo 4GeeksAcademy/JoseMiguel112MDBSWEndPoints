@@ -21,7 +21,7 @@ class User(db.Model):
     password: Mapped[str] = mapped_column(nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean(), nullable=False)
     
-    favorites: Mapped[List["Favorite"]] = relationship()
+    favorites: Mapped[List["Favorite"]] = relationship("Favorite", back_populates="user", cascade="all, delete-orphan")
 
 
     def serialize(self):
@@ -30,6 +30,12 @@ class User(db.Model):
         "email": self.email,
     }
 
+    def all_user_favorites(self):
+        results_favorites = list(map(lambda item: item.serialize(), self.favorites))
+        return{
+            "id": self.id,
+            "email": self.email
+        }
 
 class Character(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)

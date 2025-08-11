@@ -10,7 +10,7 @@ from utils import APIException, generate_sitemap
 from admin import setup_admin
 from models import db, User, Character, Planet, Vehicle, Favorite
 from sqlalchemy import select
-
+from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required, JWTManager
 
 app = Flask(__name__)
 app.url_map.strict_slashes = False
@@ -27,6 +27,10 @@ db.init_app(app)
 CORS(app)
 setup_admin(app)
 
+# Setup the Flask-JWT-Extended extension
+app.config["JWT_SECRET_KEY"] = "super-secret"  # Change this!
+jwt = JWTManager(app)
+
 # Handle/serialize errors like a JSON object
 @app.errorhandler(APIException)
 def handle_invalid_usage(error):
@@ -40,7 +44,7 @@ def sitemap():
 
 ###EndPoints
 @app.route('/users', methods=['GET'])
-def handle_hello():
+def get_users():
     all_users = db.session.execute(select(User)).scalars().all()
    
     results = list(map(lambda user: user.serialize(), all_users))
@@ -51,6 +55,59 @@ def handle_hello():
     }
 
     return jsonify(response_body), 200
+
+@app.route('/signup', methods=['POST'])
+def create_user():
+    data = request.get_json()
+    user_email = data.get("email")
+    user_password = data.get("password")
+
+    user = db.session.execute(select(User).where(User.email == user_email)).scalar_one_or_none()
+
+    if user is not None:
+        return jsonify({"msg": "email already in use"}), 409
+    
+    new_user = User(email=user_email, password=user_password, is_active=True)
+    db.session.add(new_user)
+    db.session.commit()
+
+    response_body = {
+        "msg": "User added successfully",
+        "user": new_user.serialize()
+    }
+
+    return jsonify(response_body), 201
+
+# Create a route to authenticate your users and return JWTs. The
+# create_access_token() function is used to actually generate the JWT.
+@app.route("/login", methods=["POST"])
+def login():
+    email = request.json.get("email", None)
+    password = request.json.get("password", None)
+
+    user = db.session.execute(select(User).where(User.email == email)).scalar_one_or_none()
+    if user is None:
+        return jsonify({"msg": "Bad username or password"}), 404
+    
+    if email != user.email or password != user.password:
+        return jsonify({"msg": "Bad username or password"}), 401
+
+    access_token = create_access_token(identity=email)
+    return jsonify(access_token=access_token), 200
+
+# Protect a route with jwt_required, which will kick out requests
+# without a valid JWT present.
+@app.route("/favorites", methods=["GET"])
+@jwt_required()
+def protected():
+    # Access the identity of the current user with get_jwt_identity
+    current_user_email = get_jwt_identity()
+
+    user = db.session.execute(select(User).where(User.email == current_user_email)).scalar_one_or_none()
+
+    user_favorites = db.session.execute(select(Favorite).where(Favorite.user_id == user.id)).scalars().all()
+    results = list(map(lambda favorite: favorite.serialize(), user_favorites))
+    return jsonify(logged_in_as=current_user_email, favorites=results), 200
 
 @app.route('/characters', methods=['GET'])
 def get_characters():
