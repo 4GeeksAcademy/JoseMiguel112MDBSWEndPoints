@@ -175,8 +175,9 @@ def get_one_planet(id):
 
     return jsonify(response_body), 200
 
-@app.route('/user/favorites/<int:user_id>', methods=['GET'])
-def get_user_favorites(user_id):
+@app.route('/user/favorites', methods=['GET'])
+def get_user_favorites():
+    user_id = request.json.get("id", None)
     user = db.session.execute(select(User).where(User.id == user_id)).scalar_one_or_none()
     
     if user is None:
@@ -192,8 +193,9 @@ def get_user_favorites(user_id):
 
     return jsonify(response_body), 200
 
-@app.route('/<int:user_id>/favoritesplanet/<int:planet_id>', methods=['POST'])
-def add_favorite_planet(user_id, planet_id):
+@app.route('/favorite/planet/<int:planet_id>', methods=['POST'])
+def add_favorite_planet(planet_id):
+    user_id = request.json.get("id", None)
     user = db.session.execute(select(User).where(User.id == user_id)).scalar_one_or_none()
     planet = db.session.execute(select(Planet).where(Planet.id == planet_id)).scalar_one_or_none()
     
@@ -213,8 +215,9 @@ def add_favorite_planet(user_id, planet_id):
 
     return jsonify(response_body), 201
 
-@app.route('/<int:user_id>/favoritescharacter/<int:character_id>', methods=['POST'])
-def add_favorite_character(user_id, character_id):
+@app.route('/favorite/character/<int:character_id>', methods=['POST'])
+def add_favorite_character(character_id):
+    user_id = request.json.get("id", None)
     user = db.session.execute(select(User).where(User.id == user_id)).scalar_one_or_none()
     planet = db.session.execute(select(Character).where(Character.id == character_id)).scalar_one_or_none()
     
@@ -235,8 +238,9 @@ def add_favorite_character(user_id, character_id):
     return jsonify(response_body), 201
 
 
-@app.route('/<int:user_id>/favoritescharacter/<int:character_id>', methods=['DELETE'])
-def delete_favorite_character(user_id, character_id):
+@app.route('/favorite/character/<int:character_id>', methods=['DELETE'])
+def delete_favorite_character(character_id):
+    user_id = request.json.get("id", None)
     favorite = db.session.execute(select(Favorite).where(Favorite.user_id == user_id, Favorite.character_id == character_id)).scalar_one_or_none()
     
     if favorite is None:
@@ -251,8 +255,9 @@ def delete_favorite_character(user_id, character_id):
 
     return jsonify(response_body), 200
 
-@app.route('/<int:user_id>/favoritesplanet/<int:planet_id>', methods=['DELETE'])
-def delete_favorite_planet(user_id, planet_id):
+@app.route('/favorite/planet/<int:planet_id>', methods=['DELETE'])
+def delete_favorite_planet(planet_id):
+    user_id = request.json.get("id", None)
     favorite = db.session.execute(select(Favorite).where(Favorite.user_id == user_id, Favorite.planet_id == planet_id)).scalar_one_or_none()
     
     if favorite is None:
